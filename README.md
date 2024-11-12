@@ -37,6 +37,38 @@ Make sure you have the following components installed:
     docker-compose up
     ```
 
+## Running Tests
+
+To run the tests, follow these steps:
+
+1. Make sure you have installed the development dependencies:
+
+    ```bash
+    poetry install --with dev
+    ```
+
+2. Run the tests using `pytest`:
+
+    ```bash
+    poetry run pytest
+    ```
+
+This will execute all the tests in the `tests` directory and provide a report of the test results.
+
+
+## Usage of Endpoints
+
+To use the endpoints for generating reports, follow these steps:
+
+1. **Fetch Messages**: Use the `/fetch-messages` endpoint to initiate the process of fetching messages from Slack. This operation is asynchronous and will return a `task-id`.
+
+2. **Top Repliers**: Use the `/top-repliers` endpoint to generate a report of the top repliers in your Slack workspace. This operation is also asynchronous and will return a `task-id`.
+
+3. **Check Task Status**: To check the status of your task, use the `/task-status/{task-id}` endpoint. Replace `{task-id}` with the actual task ID you received from the previous endpoints.
+
+For detailed information on the input and output of these endpoints, refer to the Swagger documentation available at `http://localhost:5000/apidocs/`.
+
+
 ## API Documentation
 
 You can find the API documentation in Swagger by accessing the following URL once the server is up and running:

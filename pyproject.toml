@@ -18,6 +18,8 @@ flasgger = "^0.9.7.1"
 requests = "^2.32.3"
 pyfiglet = "^1.0.2"
 colorama = "^0.4.6"
+pytest = "^8.3.3"
+pytest-mock = "^3.14.0"
 
 
 [build-system]

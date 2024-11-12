@@ -26,7 +26,6 @@ def make_celery(app):
 
 app = Flask(__name__)
 
-# Configuración básica de Swagger
 swagger_config = {
     "headers": [],
     "specs": [
@@ -51,7 +50,6 @@ app.config.from_mapping(
 celery = make_celery(app)
 
 
-# Initialize colorama for text color
 init(autoreset=True)
 
 def show_banner():
