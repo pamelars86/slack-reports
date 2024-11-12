@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "pam-opensource"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+flask = "^3.0.3"
+celery = "^5.4.0"
+redis = "^5.2.0"
+slack-sdk = "^3.33.3"
+python-dotenv = "^1.0.1"
+backoff = "^2.2.1"
+openai = "^1.54.3"
+flasgger = "^0.9.7.1"
+requests = "^2.32.3"
+pyfiglet = "^1.0.2"
+colorama = "^0.4.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
