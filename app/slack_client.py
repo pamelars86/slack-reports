@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Crea el cliente de Slack con el token de autenticación
 client = WebClient(token=os.getenv("SLACK_TOKEN"))
 slack_home = os.getenv("SLACK_HOME")
 
@@ -23,27 +22,23 @@ if not client:
 else:
     logger.info("Cliente de Slack creado con éxito")
 
- # Función para obtener mensajes de un canal de Slack en un rango de fechas, con reintentos exponenciales
 @backoff.on_exception(
-    backoff.expo,                   # Estrategia de reintento exponencial
-    SlackApiError,                  # Excepción a capturar
-    max_time=300,                   # Tiempo máximo de reintento en segundos (5 minutos)
-    jitter=backoff.full_jitter,     # Agrega jitter para evitar picos
-    giveup=lambda e: e.response["error"] != "ratelimited",  # Sólo se reintenta si el error es 'ratelimited'
-    on_backoff=lambda details: logger.info(f"Reintentando... {details}")
+    backoff.expo,                   # Exponential backoff strategy
+    SlackApiError,                  # Exception to catch
+    max_time=300,                   # Max time to retry in seconds (5 minutes)
+    jitter=backoff.full_jitter,     # Add jitter to avoid spikes
+    giveup=lambda e: e.response["error"] != "ratelimited",  # only retry if it's ratelimited
+    on_backoff=lambda details: logger.info(f"Retrying... {details}")
 )
 def fetch_messages(channel, start_date, end_date):
     messages = []
     try:
-        # Convierte las fechas de inicio y fin en timestamps
-        start_ts = time.mktime(datetime.strptime(start_date, "%Y-%m-%d").timetuple())
-        end_ts = time.mktime(datetime.strptime(end_date, "%Y-%m-%d").timetuple())
+        start_ts = start_date 
+        end_ts = end_date
         next_cursor = None
 
-        # Itera sobre las páginas de mensajes usando el cursor de paginación
         while True:
             try:
-                # Intentamos obtener los mensajes
                 response = client.conversations_history(
                     channel=channel,
                     oldest=start_ts,
@@ -52,7 +47,6 @@ def fetch_messages(channel, start_date, end_date):
                     cursor=next_cursor
                 )
                 for msg in response['messages']:
-                    # Estructura el mensaje con la información necesaria
                     post_id =  msg.get("ts")
                     formatted_msg = {
                         "author": msg.get("user"),
@@ -64,46 +58,43 @@ def fetch_messages(channel, start_date, end_date):
                         "replies": []
                     }
 
-                    # Si el mensaje tiene respuestas, las obtenemos y añadimos al mensaje
                     if "reply_count" in msg:
                         replies_response = fetch_replies(channel, msg["ts"])
                         formatted_msg["replies"] = replies_response
 
-                        # TO DO Generar resumen para todo el hilo (mensaje + respuestas)
+                        # TODO Generate summary for the entire thread (message + replies)
                         thread_content = msg["text"] + " ".join(reply["message"] for reply in replies_response)
-                        formatted_msg["summary"] = generate_summary_with_llm(thread_content)
-                    else:
-                        # TO DO Generar resumen solo para el mensaje sin respuestas
-                        formatted_msg["summary"] = generate_summary_with_llm(msg["text"])
+                        # formatted_msg["summary"] = generate_summary_with_llm(thread_content)
+                    #else:
+                        # TODO Generate summary only for the message without replies
+                        # formatted_msg["summary"] = generate_summary_with_llm(msg["text"])
 
 
                     messages.append(formatted_msg)
 
-                # Actualiza el cursor para la siguiente página de mensajes
                 next_cursor = response.get("response_metadata", {}).get("next_cursor")
                 if not next_cursor:
                     break
 
             except SlackApiError as e:
-                logger.error(f"Error en paginación de mensajes: {e}")
-                logger.error(f"Error response en paginación de mensajes: {e.response}")
+                logger.error(f"Error paginating messages: {e}")
+                logger.error(f"Error response in paginating messages: {e.response}")
                 return {"error": str(e)}
 
     except SlackApiError as e:
-        logger.error(f"Error al obtener mensajes: {e}")
-        logger.error(f"Error response en obtener mensajes: {e.response}")
+        logger.error(f"Error fetching messages: {e}")
+        logger.error(f"Error response in fetching messages: {e.response}")
         return {"error": str(e)}
 
     return messages
 
-# Función para obtener respuestas (con reintentos exponenciales)
 @backoff.on_exception(
-    backoff.expo,                   # Estrategia de reintento exponencial
-    SlackApiError,                  # Excepción a capturar
-    max_time=300,                   # Tiempo máximo de reintento en segundos (5 minutos)
-    jitter=backoff.full_jitter,     # Agrega jitter para evitar picos
-    giveup=lambda e: e.response["error"] != "ratelimited",  # Solo se reintenta si es ratelimited
-    on_backoff=lambda details: logger.info(f"Reintentando... {details}")
+    backoff.expo,                   # Exponential backoff strategy
+    SlackApiError,                  # Exception to catch
+    max_time=300,                   # Max time to retry in seconds (5 minutes)
+    jitter=backoff.full_jitter,     # Add jitter to avoid spikes
+    giveup=lambda e: e.response["error"] != "ratelimited",  # only retry if it's ratelimited
+    on_backoff=lambda details: logger.info(f"Retrying... {details}")
 )
 def fetch_replies(channel, ts):
     try:
@@ -121,12 +112,12 @@ def fetch_replies(channel, ts):
             } for reply in replies_response["messages"] if reply.get("ts") != ts
         ]
     except SlackApiError as e:
-        logger.error(f"Error al obtener respuestas: {e}")
-        logger.error(f"Error response en obtener respuestas: {e.response}")
+        logger.error(f"Error fetching replies: {e}")
+        logger.error(f"Error response in fetching replies: {e.response}")
 
         if 'error' in e.response and e.response["error"] == "ratelimited":
-            logger.info("Error ratelimitado detectado. Aplicando backoff.")
-        raise e  # Propaga el error para que sea manejado por backoff
+            logger.info("Rate limit error detected. Applying backoff.")
+        raise e
     
 def fetch_top_repliers():
     return []
