@@ -1,0 +1,34 @@
+services:
+  redis:
+    image: redis
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    command: poetry run flask run --host=0.0.0.0
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - SLACK_TOKEN=${SLACK_TOKEN}
+      - CELERY_BROKER_URL=redis://redis:6379/0   # Agrega el broker de Redis
+      - result_backend=redis://redis:6379/0   # Agrega el backend de Redis
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  celery:
+    build: .
+    command: poetry run celery -A app.celery worker --loglevel=info
+    environment:
+      - FLASK_ENV=development
+      - SLACK_TOKEN=${SLACK_TOKEN}
+      - LLAMA_HOST=${LLAMA_HOST}
+    depends_on:
+      - redis
+      - api
+
+
