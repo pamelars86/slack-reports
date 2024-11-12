@@ -22,9 +22,11 @@ Make sure you have the following components installed:
 
 2. Create a `.env` file in the root of the project with the following content:
     ```env
-    SLACK_API_TOKEN=your_slack_api_token
-    CELERY_BROKER_URL=""
-    result_backend=""
+    SLACK_TOKEN=your_slack_api_token
+    CELERY_BROKER_URL="redis://redis:6379/0"
+    result_backend="redis://redis:6379/0"
+    SLACK_HOME="https://your-organization.slack.com"
+    LLAMA_HOME=""
     ```
 
 3. Build and start the Docker containers:
