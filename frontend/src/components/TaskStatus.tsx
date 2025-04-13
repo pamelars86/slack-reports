@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowPathIcon, CheckCircleIcon, XCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { TaskStatus as TaskStatusType } from '../types';
 
 interface TaskStatusProps {

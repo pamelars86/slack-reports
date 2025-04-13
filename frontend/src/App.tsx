@@ -134,11 +134,41 @@ const App: React.FC = () => {
     let extension: string;
 
     if (format === 'csv') {
-      const headers = Object.keys(data[0]);
-      const rows = data.map(item =>
+      const processedData = data.map(item => {
+        if ('reactions' in item && 'replies' in item) {
+          const { post_id, reactions, replies, ...rest } = item;
+          return {
+            ...rest,
+            reactions_count: Object.values(reactions || {}).reduce((a, b) => a + b, 0),
+            reactions_list: Object.entries(reactions || {}).map(([name, count]) => `${name}:${count}`).join('; '),
+            replies_count: replies?.length || 0,
+            replies_list: replies?.map(reply => `${reply.author}: ${reply.message}`).join('; ') || ''
+          };
+        } else {
+          const { full_name_replier, ...rest } = item;
+          return {
+            id_replier: rest.id_replier,
+            email: full_name_replier?.email || '',
+            fullname: full_name_replier?.fullname || '',
+            discussions: rest.discussions,
+            responses: rest.responses
+          };
+        }
+      });
+
+      const headers = Object.keys(processedData[0]);
+      const rows = processedData.map(item =>
         headers.map(header => {
           const value = (item as Record<string, any>)[header];
-          return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : JSON.stringify(value);
+          if (value === null || value === undefined) {
+            return '';
+          }
+          if (typeof value === 'object') {
+            return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+          }
+          const stringValue = String(value).replace(/"/g, '""');
+          const escapedValue = stringValue.replace(/[\n\r]/g, ' ');
+          return /[",\n\r]/.test(escapedValue) ? `"${escapedValue}"` : escapedValue;
         }).join(',')
       );
       content = [headers.join(','), ...rows].join('\n');

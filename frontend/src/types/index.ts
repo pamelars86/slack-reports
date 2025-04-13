@@ -30,8 +30,14 @@ export interface Reply {
 }
 
 export interface TopReplier {
-  user: string;
-  count: number;
+  id_replier: string;
+  full_name_replier: {
+    display_name: string;
+    email: string;
+    fullname: string;
+  };
+  discussions: number;
+  responses: number;
 }
 
 export type ReportData = Message[] | TopReplier[];
