@@ -26,11 +26,11 @@ def fetch_messages_task(self, channel_id, p_start_date, p_end_date):
 
     while current_start < end_date:
         current_end = min(current_start + chunk_size, end_date)
-        
+
         chunk_messages = fetch_messages(channel_id, int(current_start.timestamp()), int(current_end.timestamp()))
 
-        messages.extend(chunk_messages)  
-        
+        messages.extend(chunk_messages)
+
         current_start = current_end
 
         self.update_state(state='PROGRESS', meta={'current_start': current_start.isoformat()})
@@ -45,14 +45,14 @@ def calculate_top_repliers_task(self, channel_id, p_start_date, p_end_date, top_
 
     start_date = datetime.strptime(p_start_date, "%Y-%m-%d").replace(hour=0, minute=0, second=0)
     end_date = datetime.strptime(p_end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-    
+
     current_start = start_date
 
     while current_start < end_date:
         current_end = min(current_start + chunk_size, end_date)
 
         messages = fetch_messages(channel_id, int(current_start.timestamp()), int(current_end.timestamp()))
-        
+
         for msg in messages:
             parent_author = msg['author']
             repliers_set = set()

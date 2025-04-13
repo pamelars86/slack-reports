@@ -1,8 +1,125 @@
 # Slack Reports
 
-This project allows generating reports from data obtained from Slack.
+Application for generating reports of messages and most active users in Slack channels.
 
-## Prerequisites
+## Project Structure
+
+```
+.
+├── backend/           # FastAPI Server (app)
+├── frontend/          # React Application
+└── README.md
+```
+
+## Frontend
+
+### Prerequisites
+
+- Node.js (version 14 or higher)
+- npm or yarn
+
+### Installation
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+### Main Dependencies
+
+- React 18
+- TypeScript
+- Tailwind CSS
+- Heroicons (for icons)
+- React Router (for navigation)
+
+### Frontend Structure
+
+```
+frontend/
+├── src/
+│   ├── components/         # Reusable components
+│   │   ├── Sidebar.tsx     # Navigation sidebar
+│   │   ├── ReportForm.tsx  # Report generation form
+│   │   └── TaskStatus.tsx  # Generated reports status
+│   ├── types/             # TypeScript definitions
+│   │   └── index.ts       # Interfaces and types
+│   └── App.tsx            # Main component
+├── package.json           # Dependencies and scripts
+└── tsconfig.json          # TypeScript configuration
+```
+
+### Configuration
+
+1. Ensure the backend is running at `http://localhost:5000`
+2. If the backend is at a different URL, update the `API_URL` constant in `App.tsx`
+
+### Running the Application
+
+To start the development server:
+
+```bash
+npm start
+# or
+yarn start
+```
+
+The application will be available at `http://localhost:3000`
+
+### Features
+
+1. **Report Generation**
+   - Select report type (messages or top repliers)
+   - Enter channel ID
+   - Specify date range
+   - For top repliers, indicate how many users to show
+
+2. **Report Tracking**
+   - View status of generated reports
+   - Manually update status
+   - Download results in CSV or JSON format
+
+### Main Components
+
+1. **Sidebar**
+   - Navigation between "Generate Reports" and "Report Status"
+   - Responsive and user-friendly design
+
+2. **ReportForm**
+   - Intuitive form for report generation
+   - Field validation
+   - Report type selection with icons
+
+3. **TaskStatus**
+   - Display of each report's status
+   - Update and download options
+   - Detailed report information
+
+### Styling
+
+- Uses Tailwind CSS for styling
+- Responsive design
+- Light and dark themes
+- Heroicons for icons
+
+### Development
+
+For local development:
+
+1. Clone the repository
+2. Install dependencies
+3. Start the development server
+
+## Backend
+
+### Prerequisites
 
 Make sure you have the following components installed:
 
@@ -12,7 +129,7 @@ Make sure you have the following components installed:
 - Redis (for Celery)
 - Slack API Token
 
-## Installation and Configuration
+### Installation and Configuration
 
 1. Clone the repository:
     ```bash
@@ -39,26 +156,8 @@ Make sure you have the following components installed:
     docker-compose up
     ```
 
-## Running Tests
 
-To run the tests, follow these steps:
-
-1. Make sure you have installed the development dependencies:
-
-    ```bash
-    poetry install --with dev
-    ```
-
-2. Run the tests using `pytest`:
-
-    ```bash
-    poetry run pytest
-    ```
-
-This will execute all the tests in the `tests` directory and provide a report of the test results.
-
-
-## Usage of Endpoints
+### Usage of Endpoints
 
 To use the endpoints for generating reports, follow these steps:
 
@@ -70,8 +169,7 @@ To use the endpoints for generating reports, follow these steps:
 
 For detailed information on the input and output of these endpoints, refer to the Swagger documentation available at `http://localhost:5000/apidocs/`.
 
-
-## API Documentation
+### API Documentation
 
 You can find the API documentation in Swagger by accessing the following URL once the server is up and running:
 
@@ -79,14 +177,14 @@ You can find the API documentation in Swagger by accessing the following URL onc
 http://localhost:5000/apidocs/
 ```
 
-## Usage
+### Usage
 
 To generate reports, make sure all services are running and use the endpoints documented in Swagger.
 
-## Contributions
+### Contributions
 
 Contributions are welcome. Please open an issue or a pull request to discuss any changes you would like to make.
 
-## License
+### License
 
 This project is licensed under the MIT License. See the `LICENSE` file for more details.

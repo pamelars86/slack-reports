@@ -34,7 +34,7 @@ else:
 def fetch_messages(channel, start_date, end_date):
     messages = []
     try:
-        start_ts = start_date 
+        start_ts = start_date
         end_ts = end_date
         next_cursor = None
 
@@ -124,6 +124,6 @@ def fetch_replies(channel, ts):
         if 'error' in e.response and e.response["error"] == "ratelimited":
             logger.info("Rate limit error detected. Applying backoff.")
         raise e
-    
+
 def fetch_top_repliers():
     return []

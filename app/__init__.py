@@ -6,6 +6,7 @@ import logging
 import pyfiglet
 from colorama import init, Fore
 from flasgger import Swagger
+from flask_cors import CORS
 
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -25,6 +26,7 @@ def make_celery(app):
     return celery
 
 app = Flask(__name__)
+CORS(app)  # Habilitar CORS para todas las rutas
 
 swagger_config = {
     "headers": [],
@@ -55,7 +57,7 @@ init(autoreset=True)
 def show_banner():
     text = "Slack Reports"
     ascii_art = pyfiglet.figlet_format(text)
-    print(Fore.CYAN + ascii_art)  
+    print(Fore.CYAN + ascii_art)
 
 show_banner()
 

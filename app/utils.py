@@ -15,13 +15,13 @@ client_util = WebClient(token=os.getenv("SLACK_TOKEN"))
 def get_channel_id(channel_name):
     try:
         response = client_util.conversations_list()
-        
+
         for channel in response['channels']:
             if channel['name'] == channel_name:
                 return channel['id']
-        
+
         return f"Channel '{channel_name}' not found."
-    
+
     except SlackApiError as e:
         return f"Error fetching channels: {e.response['error']}"
 
