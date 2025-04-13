@@ -51,7 +51,7 @@ def fetch_messages(channel, start_date, end_date):
                     post_id =  msg.get("ts")
                     user_id = msg.get("user")
                     # user_info = get_user_info_by_user_id(client, user_id)
-
+                    
                     formatted_msg = {
                         "author": user_id,
                        # "fullname": user_info["email"],

@@ -72,7 +72,7 @@ def fetch_messages():
 
         start_date = validate_date_format(start_date_str)
         end_date = validate_date_format(end_date_str)
-
+        
         if not start_date or not end_date:
              jsonify({"error": "Dates must be in the format YYYY-MM-DD"}), 400
 
@@ -137,7 +137,7 @@ def top_repliers():
         start_date_str = data.get("start_date")
         end_date_str = data.get("end_date")
         top_n = data.get('top_n')
-
+        
         start_date = validate_date_format(start_date_str)
         end_date = validate_date_format(end_date_str)
         if not start_date or not end_date:
@@ -148,13 +148,13 @@ def top_repliers():
             return jsonify({"error": error_message}), 400
 
         top_n = validate_top_n(top_n)
-
+        
         # Lanza la tarea de Celery en segundo plano
         task = calculate_top_repliers_task.delay(channel_id, start_date_str, end_date_str, top_n)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
+    
     return jsonify({"task_id": task.id}), 202
 
 
@@ -207,7 +207,7 @@ def top_repliers():
 })
 def get_task_status(task_id):
     task_name = request.args.get('task_name')
-
+    
     if task_name and task_name in TASK_MAPPING:
         task = TASK_MAPPING[task_name].AsyncResult(task_id)
     else:

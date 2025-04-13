@@ -40,7 +40,7 @@ def fetch_messages_task(self, channel_id, p_start_date, p_end_date):
 @celery.task(bind=True)
 def calculate_top_repliers_task(self, channel_id, p_start_date, p_end_date, top_n=10):
     top_repliers_data = defaultdict(lambda: {"discussions": 0, "responses": 0, "full_name": ""})
-
+    
     chunk_size = timedelta(days=7)  # Ex.: process 7 days at a time
 
     start_date = datetime.strptime(p_start_date, "%Y-%m-%d").replace(hour=0, minute=0, second=0)

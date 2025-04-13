@@ -34,13 +34,13 @@ def get_user_info_by_user_id(client: WebClient, user_id: str) -> Optional[dict]:
     try:
         user_profile = client.users_profile_get(user=user_id)
         user_profile = user_profile.data["profile"]
-
+    
         fullname = user_profile["real_name"]
         display_name = user_profile["display_name"]
 
         if "email" in user_profile:
                 email = user_profile["email"]
-
+    
     except SlackApiError as ex:
         logger.error(f"Error getting user profile: {ex}")
         if ex.response["error"] != "ratelimited":
