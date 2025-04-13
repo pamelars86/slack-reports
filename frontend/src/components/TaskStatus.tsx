@@ -36,13 +36,13 @@ const TaskStatus: React.FC<TaskStatusProps> = ({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold">
-            {type === 'messages' ? 'Reporte de Mensajes' : 'Reporte de Top Repliers'} - ID: {taskId}
+            {type === 'messages' ? 'Messages Report' : 'Top Repliers Report'} - ID: {taskId}
           </h3>
           <p className="text-sm text-gray-600">
-            Canal: {channel_id}
+            Channel: {channel_id}
           </p>
           <p className="text-sm text-gray-600">
-            Período: {formatDate(start_date)} - {formatDate(end_date)}
+            Period: {formatDate(start_date)} - {formatDate(end_date)}
           </p>
           {top_n && (
             <p className="text-sm text-gray-600">
@@ -51,30 +51,30 @@ const TaskStatus: React.FC<TaskStatusProps> = ({
           )}
         </div>
         <div className="text-sm text-gray-500">
-          Última actualización: {last_updated.toLocaleTimeString()}
+          Last updated: {last_updated.toLocaleTimeString()}
         </div>
       </div>
 
       <div className="mb-4">
         {status.status === 'PENDING' && (
           <div className="text-yellow-600">
-            <div className="font-semibold">Estado: Pendiente</div>
+            <div className="font-semibold">Status: Pending</div>
           </div>
         )}
         {status.status === 'SUCCESS' && (
           <div className="text-green-600">
-            <div className="font-semibold">Estado: Completado</div>
+            <div className="font-semibold">Status: Completed</div>
             {status.data && (
               <div className="text-xs text-gray-500 mt-1">
-                Datos disponibles: {Array.isArray(status.data) ? `${status.data.length} registros` : '1 registro'}
+                Available data: {Array.isArray(status.data) ? `${status.data.length} records` : '1 record'}
               </div>
             )}
           </div>
         )}
         {status.status === 'FAILURE' && (
           <div className="text-red-600">
-            <div className="font-semibold">Estado: Error</div>
-            <div className="text-sm mt-1">Error: {status.error || 'Error desconocido'}</div>
+            <div className="font-semibold">Status: Error</div>
+            <div className="text-sm mt-1">Error: {status.error || 'Unknown error'}</div>
           </div>
         )}
       </div>
@@ -91,7 +91,7 @@ const TaskStatus: React.FC<TaskStatusProps> = ({
             title="Click to refresh task status"
           >
             <ArrowPathIcon className="h-5 w-5" />
-            <span>Actualizar Estado</span>
+            <span>Refresh Status</span>
           </button>
         )}
 

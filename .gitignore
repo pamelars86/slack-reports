@@ -2,3 +2,6 @@
 
 # Frontend
 frontend/node_modules/
+
+# Backend
+app/__pycache__/

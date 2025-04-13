@@ -59,12 +59,12 @@ const App: React.FC = () => {
       };
 
       setTasks(prev => [newTask, ...prev]);
-      setNotification({ message: `Tarea ${result.task_id} generada exitosamente`, taskId: result.task_id });
+      setNotification({ message: `Task ${result.task_id} generated successfully`, taskId: result.task_id });
 
       setTimeout(() => setNotification(null), 5000);
     } catch (error) {
       console.error('Error generating report:', error);
-      setNotification({ message: 'Error al generar la tarea', taskId: '' });
+      setNotification({ message: 'Error generating task', taskId: '' });
       setTimeout(() => setNotification(null), 5000);
     }
   };
@@ -102,11 +102,11 @@ const App: React.FC = () => {
 
       let notificationMessage = '';
       if (newStatus.status === 'SUCCESS') {
-        notificationMessage = `Tarea ${taskId} completada exitosamente`;
+        notificationMessage = `Task ${taskId} completed successfully`;
       } else if (newStatus.status === 'FAILURE') {
-        notificationMessage = `Error en tarea ${taskId}: ${newStatus.error || 'Error desconocido'}`;
+        notificationMessage = `Error in task ${taskId}: ${newStatus.error || 'Unknown error'}`;
       } else {
-        notificationMessage = `Tarea ${taskId} aún está pendiente`;
+        notificationMessage = `Task ${taskId} is still pending`;
       }
 
       setNotification({
@@ -117,7 +117,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error checking task status:', error);
       setNotification({
-        message: `Error al verificar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        message: `Error checking status: ${error instanceof Error ? error.message : 'Unknown error'}`,
         taskId
       });
       setTimeout(() => setNotification(null), 5000);
@@ -175,7 +175,7 @@ const App: React.FC = () => {
           <ReportForm onGenerateReport={generateReport} />
         ) : tasks.length > 0 ? (
           <div className="p-6 space-y-6">
-            <h2 className="text-xl font-semibold">Reportes Generados</h2>
+            <h2 className="text-xl font-semibold">Generated Reports</h2>
             {tasks.map(task => (
               <TaskStatus
                 key={task.id}
@@ -194,8 +194,8 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="p-6">
-            <h2 className="text-xl font-semibold">No hay reportes generados</h2>
-            <p className="text-gray-600">Genera un reporte para ver su estado.</p>
+            <h2 className="text-xl font-semibold">No reports generated</h2>
+            <p className="text-gray-600">Generate a report to see its status.</p>
           </div>
         )}
       </main>
