@@ -15,8 +15,8 @@ services:
       - SLACK_TOKEN=${SLACK_TOKEN}
       - CELERY_BROKER_URL=redis://redis:6379/0   # Agrega el broker de Redis
       - result_backend=redis://redis:6379/0   # Agrega el backend de Redis
-    volumes:
-      - .:/app
+    #volumes:
+    #  - .:/app
     depends_on:
       - redis
 
@@ -30,5 +30,3 @@ services:
     depends_on:
       - redis
       - api
-
-

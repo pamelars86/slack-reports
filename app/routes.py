@@ -1,10 +1,14 @@
 from flask import request, jsonify
 from . import app, celery
-from .tasks import fetch_messages_task
+from .tasks import fetch_messages_task, calculate_top_repliers_task
 from flasgger import swag_from
-from .tasks import calculate_top_repliers_task
+from .utils import validate_date_format, validate_dates, validate_top_n, get_channel_id
 
 
+TASK_MAPPING = {
+    'fetch_messages': fetch_messages_task,
+    'top_repliers': calculate_top_repliers_task
+}
 
 @app.route("/", methods=["GET"])
 @swag_from({
@@ -60,14 +64,28 @@ def home():
     }
 })
 def fetch_messages():
-    data = request.get_json()
-    channel_id = data.get("channel_id")
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
+    try:
+        data = request.get_json()
+        channel_id = data.get("channel_id")
+        start_date_str = data.get("start_date")
+        end_date_str = data.get("end_date")
 
-    task = fetch_messages_task.apply_async(args=[channel_id, start_date, end_date])
+        start_date = validate_date_format(start_date_str)
+        end_date = validate_date_format(end_date_str)
 
-    return jsonify({"task_id": task.id}), 202
+        if not start_date or not end_date:
+             jsonify({"error": "Dates must be in the format YYYY-MM-DD"}), 400
+
+        error_message = validate_dates(start_date, end_date)
+        if error_message:
+            return jsonify({"error": error_message}), 400
+
+        task = fetch_messages_task.apply_async(args=[channel_id, start_date_str, end_date_str])
+
+        return jsonify({"task_id": task.id}), 202
+
+    except Exception as e:
+            return jsonify({"error": str(e)}), 400
 
 
 @app.route("/top-repliers", methods=["POST"])
@@ -112,15 +130,31 @@ def fetch_messages():
     }
 })
 def top_repliers():
-    data = request.get_json()
-    channel_id = data.get("channel_id")
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-    top_n = data.get('top')
-    
-    # Lanza la tarea de Celery en segundo plano
-    task = calculate_top_repliers_task.delay(channel_id, start_date, end_date, top_n)
-    
+
+    try:
+        data = request.get_json()
+        channel_id = data.get("channel_id")
+        start_date_str = data.get("start_date")
+        end_date_str = data.get("end_date")
+        top_n = data.get('top_n')
+
+        start_date = validate_date_format(start_date_str)
+        end_date = validate_date_format(end_date_str)
+        if not start_date or not end_date:
+             jsonify({"error": "Dates must be in the format YYYY-MM-DD"}), 400
+
+        error_message = validate_dates(start_date, end_date)
+        if error_message:
+            return jsonify({"error": error_message}), 400
+
+        top_n = validate_top_n(top_n)
+
+        # Lanza la tarea de Celery en segundo plano
+        task = calculate_top_repliers_task.delay(channel_id, start_date_str, end_date_str, top_n)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
     return jsonify({"task_id": task.id}), 202
 
 
@@ -133,6 +167,13 @@ def top_repliers():
             'required': True,
             'type': 'string',
             'description': 'The ID of the task'
+        },
+        {
+            'name': 'task_name',
+            'in': 'query',
+            'required': False,
+            'type': 'string',
+            'description': 'The name of the task using _'
         }
     ],
     'responses': {
@@ -165,7 +206,13 @@ def top_repliers():
     }
 })
 def get_task_status(task_id):
-    task = calculate_top_repliers_task.AsyncResult(task_id)
+    task_name = request.args.get('task_name')
+
+    if task_name and task_name in TASK_MAPPING:
+        task = TASK_MAPPING[task_name].AsyncResult(task_id)
+    else:
+        return jsonify({"status": "FAILURE", "error": "Invalid task_name"}), 400
+
     if task.state == 'PENDING':
         return jsonify({"status": "PENDING"}), 202
     elif task.state == 'SUCCESS':
@@ -174,4 +221,3 @@ def get_task_status(task_id):
         return jsonify({"status": "FAILURE", "error": str(task.info)}), 500
     else:
         return jsonify({"status": task.state}), 202
-    

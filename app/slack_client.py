@@ -4,6 +4,7 @@ from datetime import datetime
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from app.llm_client import generate_summary_with_llm
+from .utils import get_user_info_by_user_id
 
 from . import logger
 import os
@@ -33,7 +34,7 @@ else:
 def fetch_messages(channel, start_date, end_date):
     messages = []
     try:
-        start_ts = start_date 
+        start_ts = start_date
         end_ts = end_date
         next_cursor = None
 
@@ -48,14 +49,19 @@ def fetch_messages(channel, start_date, end_date):
                 )
                 for msg in response['messages']:
                     post_id =  msg.get("ts")
+                    user_id = msg.get("user")
+                    # user_info = get_user_info_by_user_id(client, user_id)
+
                     formatted_msg = {
-                        "author": msg.get("user"),
+                        "author": user_id,
+                       # "fullname": user_info["email"],
                         "message": msg.get("text"),
                         "post_id": post_id,
                         "url": f"{slack_home}/archives/{channel}/p{post_id[:10]}.{post_id[-6:]}",
                         "date": datetime.fromtimestamp(float(msg.get("ts"))).isoformat(),
                         "reactions": {r["name"]: r["count"] for r in msg.get("reactions", [])},
-                        "replies": []
+                        "replies": [],
+                        "subtype": msg.get("subtype")
                     }
 
                     if "reply_count" in msg:
@@ -118,6 +124,6 @@ def fetch_replies(channel, ts):
         if 'error' in e.response and e.response["error"] == "ratelimited":
             logger.info("Rate limit error detected. Applying backoff.")
         raise e
-    
+
 def fetch_top_repliers():
     return []
