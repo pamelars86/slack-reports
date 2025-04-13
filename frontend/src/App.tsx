@@ -145,7 +145,14 @@ const App: React.FC = () => {
             replies_list: replies?.map(reply => `${reply.author}: ${reply.message}`).join('; ') || ''
           };
         } else {
-          return item;
+          const { full_name_replier, ...rest } = item;
+          return {
+            id_replier: rest.id_replier,
+            email: full_name_replier?.email || '',
+            fullname: full_name_replier?.fullname || '',
+            discussions: rest.discussions,
+            responses: rest.responses
+          };
         }
       });
 
