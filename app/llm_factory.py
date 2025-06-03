@@ -6,7 +6,7 @@ class LLMFactory:
     """Factory for creating LLM instances"""
     
     @staticmethod
-    def create_llm(provider: str) -> LLMInterface:
+    def create_llm(provider: str, model: str) -> LLMInterface:
         """Create an LLM instance based on provider
         
         Args:
@@ -21,8 +21,8 @@ class LLMFactory:
         provider_lower = provider.lower().strip()
         
         if provider_lower == 'openai':
-            return OpenAILLM()
+            return OpenAILLM(model)
         elif provider_lower == 'ollama':
-            return OllamaLLM()
+            return OllamaLLM(model)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}. Supported providers: 'openai', 'ollama'") 

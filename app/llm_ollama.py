@@ -6,39 +6,47 @@ from . import logger
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://host.docker.internal:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'deepseek-r1:latest')
+
 class OllamaLLM(LLMInterface):
     """Ollama implementation of LLM interface"""
     
-    def __init__(self):
+    def __init__(self, model: str = None):
         super().__init__()
-        self.base_url = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-        self.model = os.getenv('OLLAMA_MODEL', 'llama3')
+        self.base_url = OLLAMA_BASE_URL
+        # Use provided model or fallback to environment variable or default
+        self.model = model or OLLAMA_MODEL
     
     def generate_summary(self, main_message: str, replies: str) -> str:
         """Generate summary using Ollama API"""
         try:
             system_prompt, user_prompt = self.format_prompt(main_message, replies)
             
-            url = f"{self.base_url}/api/chat"
-            data = {
+            payload = {
                 "model": self.model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "max_tokens": 500
-                }
+                "think": False,
+                "stream": False
             }
+
+            logger.info(f"Sending request to Ollama with model: {self.model}")
             
-            headers = {"Content-Type": "application/json"}
+            response = requests.post(f"{self.base_url}/api/chat", json=payload)
             
-            response = requests.post(url, headers=headers, json=data, timeout=60)
-            response.raise_for_status()
+            if response.status_code != 200:
+                logger.error("Error in Ollama response: %s", response.text)
+                return f"Error: Ollama respondió con código {response.status_code}"
             
-            return response.json()["message"]["content"]
+            try:
+                data = response.json()
+                return data.get("message", {}).get("content", "")
+            except ValueError:
+                logger.error("Failed to parse the response as JSON")
+                return "Error: No se pudo parsear la respuesta de Ollama"
             
         except requests.exceptions.ConnectionError as e:
             error_msg = f"No se puede conectar a Ollama en {self.base_url}. "

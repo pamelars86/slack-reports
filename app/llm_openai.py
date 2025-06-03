@@ -9,16 +9,19 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 class OpenAILLM(LLMInterface):
     """OpenAI implementation of LLM interface"""
     
-    def __init__(self):
+    def __init__(self, model: str = None):
         super().__init__()
         self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+        # Use provided model or fallback to environment variable or default
+        self.model = model or os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
     
     def generate_summary(self, main_message: str, replies: str) -> str:
         """Generate summary using OpenAI API"""
         try:
             system_prompt, user_prompt = self.format_prompt(main_message, replies)
             
+            logger.info(f"Sending request to OpenAI with model: {self.model}")
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[

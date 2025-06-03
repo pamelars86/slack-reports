@@ -284,6 +284,7 @@ def summarize_thread():
         channel_id = data.get("channel_id")
         thread_ts = data.get("thread_ts")
         llm_provider = data.get("llm_provider")
+        model = data.get("model")
         
         # Validate required parameters
         if not channel_id:
@@ -292,13 +293,15 @@ def summarize_thread():
             return jsonify({"error": "Missing required parameter: thread_ts"}), 400
         if not llm_provider:
             return jsonify({"error": "Missing required parameter: llm_provider"}), 400
+        if not model:
+            return jsonify({"error": "Missing required parameter: model"}), 400
         
         # Validate LLM provider
         if llm_provider.lower() not in ['openai', 'ollama']:
             return jsonify({"error": "Invalid llm_provider. Must be 'openai' or 'ollama'"}), 400
         
         # Launch Celery task
-        task = summarize_thread_task.apply_async(args=[channel_id, thread_ts, llm_provider.lower()])
+        task = summarize_thread_task.apply_async(args=[channel_id, thread_ts, llm_provider.lower(), model])
         
         return jsonify({"task_id": task.id}), 202
         

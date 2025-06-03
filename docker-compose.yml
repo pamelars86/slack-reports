@@ -15,6 +15,10 @@ services:
       - SLACK_TOKEN=${SLACK_TOKEN}
       - CELERY_BROKER_URL=redis://redis:6379/0   # Agrega el broker de Redis
       - result_backend=redis://redis:6379/0   # Agrega el backend de Redis
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     #volumes:
     #  - .:/app
     depends_on:
@@ -26,7 +30,10 @@ services:
     environment:
       - FLASK_ENV=development
       - SLACK_TOKEN=${SLACK_TOKEN}
-      - LLAMA_HOST=${LLAMA_HOST}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
       - api

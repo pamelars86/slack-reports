@@ -94,7 +94,7 @@ def calculate_top_repliers_task(self, channel_id, p_start_date, p_end_date, top_
     return result
 
 @celery.task(bind=True)
-def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: str):
+def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: str, model: str):
     """
     Celery task to summarize a Slack thread using the specified LLM provider
     
@@ -102,6 +102,7 @@ def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: s
         channel_id: The Slack channel ID
         thread_ts: The thread timestamp (e.g., "1748458889.115369")
         llm_provider: Either 'openai' or 'ollama'
+        model: The model to use
     
     Returns:
         Dictionary containing the thread data and summary
@@ -121,7 +122,7 @@ def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: s
         
         # Create LLM instance
         try:
-            llm = LLMFactory.create_llm(llm_provider)
+            llm = LLMFactory.create_llm(llm_provider, model )
         except ValueError as e:
             return {"error": str(e)}
         
@@ -146,6 +147,7 @@ def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: s
             "thread_data": thread_data,
             "summary": summary,
             "llm_provider": llm_provider,
+            "model": model,
             "generated_at": datetime.now().isoformat()
         }
         

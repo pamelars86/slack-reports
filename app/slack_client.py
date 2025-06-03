@@ -3,7 +3,6 @@ import backoff
 from datetime import datetime
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from app.llm_client import generate_summary_with_llm
 from .utils import get_user_info_by_user_id
 
 from . import logger
@@ -67,14 +66,6 @@ def fetch_messages(channel, start_date, end_date):
                     if "reply_count" in msg:
                         replies_response = fetch_replies(channel, msg["ts"])
                         formatted_msg["replies"] = replies_response
-
-                        # TODO Generate summary for the entire thread (message + replies)
-                        thread_content = msg["text"] + " ".join(reply["message"] for reply in replies_response)
-                        # formatted_msg["summary"] = generate_summary_with_llm(thread_content)
-                    #else:
-                        # TODO Generate summary only for the message without replies
-                        # formatted_msg["summary"] = generate_summary_with_llm(msg["text"])
-
 
                     messages.append(formatted_msg)
 
