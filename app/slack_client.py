@@ -127,3 +127,73 @@ def fetch_replies(channel, ts):
 
 def fetch_top_repliers():
     return []
+
+@backoff.on_exception(
+    backoff.expo,
+    SlackApiError,
+    max_time=300,
+    jitter=backoff.full_jitter,
+    giveup=lambda e: e.response["error"] != "ratelimited",
+    on_backoff=lambda details: logger.info(f"Retrying... {details}")
+)
+def fetch_thread_by_ts(channel: str, thread_ts: str) -> dict:
+    """Fetch a complete thread by thread timestamp
+    
+    Args:
+        channel: The channel ID
+        thread_ts: The thread timestamp (e.g., "1748458889.115369")
+        
+    Returns:
+        Dictionary containing the main message and all replies
+    """
+    try:
+        # Get the complete conversation including all replies
+        response = client.conversations_replies(
+            channel=channel,
+            ts=thread_ts,
+            inclusive=True
+        )
+        
+        messages = response["messages"]
+        if not messages:
+            return {"error": "Thread not found"}
+        
+        # First message is the main thread message
+        main_message = messages[0]
+        replies = messages[1:] if len(messages) > 1 else []
+        
+        # Format main message
+        formatted_main = {
+            "author": main_message.get("user"),
+            "message": main_message.get("text", ""),
+            "post_id": main_message.get("ts"),
+            "url": f"{slack_home}/archives/{channel}/p{main_message.get('ts', '')[:10]}.{main_message.get('ts', '')[-6:]}",
+            "date": datetime.fromtimestamp(float(main_message.get("ts", 0))).isoformat(),
+            "reactions": {r["name"]: r["count"] for r in main_message.get("reactions", [])},
+        }
+        
+        # Format replies
+        formatted_replies = []
+        for reply in replies:
+            formatted_reply = {
+                "author": reply.get("user"),
+                "message": reply.get("text", ""),
+                "post_id": reply.get("ts"),
+                "url": f"{slack_home}/archives/{channel}/p{reply.get('ts', '')[:10]}.{reply.get('ts', '')[-6:]}",
+                "date": datetime.fromtimestamp(float(reply.get("ts", 0))).isoformat()
+            }
+            formatted_replies.append(formatted_reply)
+        
+        return {
+            "main_message": formatted_main,
+            "replies": formatted_replies,
+            "total_messages": len(messages)
+        }
+        
+    except SlackApiError as e:
+        logger.error(f"Error fetching thread: {e}")
+        logger.error(f"Error response: {e.response}")
+        return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"Unexpected error fetching thread: {e}")
+        return {"error": f"Unexpected error: {str(e)}"}

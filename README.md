@@ -1,6 +1,6 @@
 # Slack Reports
 
-Application for generating reports of messages and most active users in Slack channels.
+Application for generating reports of messages and most active users in Slack channels, with AI-powered thread summarization.
 
 ## Project Structure
 
@@ -81,7 +81,12 @@ The application will be available at `http://localhost:3000`
    - Specify date range
    - For top repliers, indicate how many users to show
 
-2. **Report Tracking**
+2. **Thread Summarization** (NEW)
+   - Generate AI-powered summaries of Slack threads
+   - Support for OpenAI and Ollama LLM providers
+   - Input thread timestamp and channel ID
+
+3. **Report Tracking**
    - View status of generated reports
    - Manually update status
    - Download results in CSV or JSON format
@@ -128,6 +133,8 @@ Make sure you have the following components installed:
 - Docker Compose
 - Redis (for Celery)
 - Slack API Token
+- OpenAI API Key (optional, for OpenAI summarization)
+- Ollama (optional, for local LLM summarization)
 
 ### Installation and Configuration
 
@@ -139,11 +146,21 @@ Make sure you have the following components installed:
 
 2. Create a `.env` file in the root of the project with the following content:
     ```env
+    # Slack Configuration
     SLACK_TOKEN=your_slack_api_token
+    SLACK_HOME="https://your-organization.slack.com"
+    
+    # Redis Configuration
     CELERY_BROKER_URL="redis://redis:6379/0"
     result_backend="redis://redis:6379/0"
-    SLACK_HOME="https://your-organization.slack.com"
-    LLAMA_HOME=""
+    
+    # OpenAI Configuration (optional)
+    OPENAI_API_KEY=your_openai_api_key
+    OPENAI_MODEL=gpt-3.5-turbo
+    
+    # Ollama Configuration (optional)
+    OLLAMA_HOST=http://localhost:11434
+    OLLAMA_MODEL=llama3
     ```
 
 3. Build and start the Docker containers:
@@ -151,11 +168,27 @@ Make sure you have the following components installed:
     docker-compose up --build
     ```
 
-5. Start the server:
+4. Start the server:
     ```bash
     docker-compose up
     ```
 
+### New AI Summarization Features
+
+#### Thread Summarization
+The application now supports AI-powered summarization of Slack threads using either OpenAI or Ollama:
+
+- **OpenAI Integration**: Uses GPT models for high-quality summaries
+- **Ollama Integration**: Uses local LLM models for privacy-focused summarization
+- **Configurable Prompts**: Prompts are stored in `app/prompts.yml` for easy customization
+- **Flexible Architecture**: Abstract interface allows easy addition of new LLM providers
+
+#### LLM Architecture
+- `LLMInterface`: Abstract base class for all LLM implementations
+- `OpenAILLM`: OpenAI API implementation
+- `OllamaLLM`: Ollama local model implementation  
+- `LLMFactory`: Factory pattern for creating appropriate LLM instances
+- Prompts stored in YAML for easy modification without code changes
 
 ### Usage of Endpoints
 
@@ -165,13 +198,22 @@ To use the endpoints for generating reports, follow these steps:
 
 2. **Top Repliers**: Use the `/top-repliers` endpoint to generate a report of the top repliers in your Slack workspace. This operation is also asynchronous and will return a `task-id`.
 
-3. **Check Task Status**: To check the status of your task, use the `/task-status/{task-id}` endpoint. Replace `{task-id}` with the actual task ID you received from the previous endpoints.
+3. **Thread Summarization** (NEW): Use the `/summarize-thread` endpoint to generate AI summaries of Slack threads:
+   ```json
+   {
+     "channel_id": "C1234567890",
+     "thread_ts": "1748458889.115369",
+     "llm_provider": "openai"
+   }
+   ```
+
+4. **Check Task Status**: To check the status of your task, use the `/task-status/{task-id}` endpoint. Replace `{task-id}` with the actual task ID you received from the previous endpoints.
 
 For detailed information on the input and output of these endpoints, refer to the Swagger documentation available at `http://localhost:5000/apidocs/`.
 
 ### API Documentation
 
-You can find the API documentation in Swagger by accessing the following URL once the server is up and running:
+You can find the API documentation in Swagger by accessing the following URL once the server is running:
 
 ```
 http://localhost:5000/apidocs/
@@ -179,7 +221,7 @@ http://localhost:5000/apidocs/
 
 ### Usage
 
-To generate reports, make sure all services are running and use the endpoints documented in Swagger.
+To generate reports and summaries, make sure all services are running and use the endpoints documented in Swagger.
 
 ### Contributions
 

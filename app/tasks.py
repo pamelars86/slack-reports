@@ -1,5 +1,6 @@
 from . import celery
-from .slack_client import fetch_messages
+from .slack_client import fetch_messages, fetch_thread_by_ts
+from .llm_factory import LLMFactory
 from collections import defaultdict
 from datetime import datetime, timedelta
 from . import logger
@@ -91,3 +92,65 @@ def calculate_top_repliers_task(self, channel_id, p_start_date, p_end_date, top_
     ]
 
     return result
+
+@celery.task(bind=True)
+def summarize_thread_task(self, channel_id: str, thread_ts: str, llm_provider: str):
+    """
+    Celery task to summarize a Slack thread using the specified LLM provider
+    
+    Args:
+        channel_id: The Slack channel ID
+        thread_ts: The thread timestamp (e.g., "1748458889.115369")
+        llm_provider: Either 'openai' or 'ollama'
+    
+    Returns:
+        Dictionary containing the thread data and summary
+    """
+    try:
+        # Update task state
+        self.update_state(state='PROGRESS', meta={'step': 'Fetching thread data'})
+        
+        # Fetch the complete thread
+        thread_data = fetch_thread_by_ts(channel_id, thread_ts)
+        
+        if "error" in thread_data:
+            return {"error": thread_data["error"]}
+        
+        # Update task state
+        self.update_state(state='PROGRESS', meta={'step': 'Generating summary'})
+        
+        # Create LLM instance
+        try:
+            llm = LLMFactory.create_llm(llm_provider)
+        except ValueError as e:
+            return {"error": str(e)}
+        
+        # Prepare content for summarization
+        main_message_text = thread_data["main_message"]["message"]
+        
+        # Format replies into a single string
+        replies_text = ""
+        if thread_data["replies"]:
+            replies_list = []
+            for i, reply in enumerate(thread_data["replies"], 1):
+                replies_list.append(f"Respuesta {i}: {reply['message']}")
+            replies_text = "\n".join(replies_list)
+        else:
+            replies_text = "No hay respuestas en este hilo."
+        
+        # Generate summary
+        summary = llm.generate_summary(main_message_text, replies_text)
+        
+        # Prepare final result
+        result = {
+            "thread_data": thread_data,
+            "summary": summary,
+            "llm_provider": llm_provider,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in summarize_thread_task: {e}")
+        return {"error": f"Task failed: {str(e)}"}
