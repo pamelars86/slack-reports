@@ -1,13 +1,14 @@
 from flask import request, jsonify
 from . import app, celery
-from .tasks import fetch_messages_task, calculate_top_repliers_task
+from .tasks import fetch_messages_task, calculate_top_repliers_task, summarize_thread_task
 from flasgger import swag_from
 from .utils import validate_date_format, validate_dates, validate_top_n, get_channel_id
 
 
 TASK_MAPPING = {
     'fetch_messages': fetch_messages_task,
-    'top_repliers': calculate_top_repliers_task
+    'top_repliers': calculate_top_repliers_task,
+    'summarize_thread': summarize_thread_task
 }
 
 @app.route("/", methods=["GET"])
@@ -221,3 +222,88 @@ def get_task_status(task_id):
         return jsonify({"status": "FAILURE", "error": str(task.info)}), 500
     else:
         return jsonify({"status": task.state}), 202
+
+@app.route("/summarize-thread", methods=["POST"])
+@swag_from({
+    'parameters': [
+        {
+            'name': 'body',
+            'in': 'body',
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'channel_id': {
+                        'type': 'string',
+                        'example': 'C1234567890',
+                        'description': 'The Slack channel ID'
+                    },
+                    'thread_ts': {
+                        'type': 'string',
+                        'example': '1748458889.115369',
+                        'description': 'The thread timestamp'
+                    },
+                    'llm_provider': {
+                        'type': 'string',
+                        'example': 'openai',
+                        'description': 'LLM provider to use (openai or ollama)',
+                        'enum': ['openai', 'ollama']
+                    }
+                },
+                'required': ['channel_id', 'thread_ts', 'llm_provider']
+            }
+        }
+    ],
+    'responses': {
+        202: {
+            'description': 'Thread summarization task created successfully.',
+            'examples': {
+                'application/json': {
+                    'task_id': 'task_id_1'
+                }
+            }
+        },
+        400: {
+            'description': 'Bad request - missing or invalid parameters.',
+            'examples': {
+                'application/json': {
+                    'error': 'Missing required parameter: channel_id'
+                }
+            }
+        }
+    }
+})
+def summarize_thread():
+    """Endpoint to summarize a Slack thread using LLM"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+        
+        channel_id = data.get("channel_id")
+        thread_ts = data.get("thread_ts")
+        llm_provider = data.get("llm_provider")
+        model = data.get("model")
+        
+        # Validate required parameters
+        if not channel_id:
+            return jsonify({"error": "Missing required parameter: channel_id"}), 400
+        if not thread_ts:
+            return jsonify({"error": "Missing required parameter: thread_ts"}), 400
+        if not llm_provider:
+            return jsonify({"error": "Missing required parameter: llm_provider"}), 400
+        if not model:
+            return jsonify({"error": "Missing required parameter: model"}), 400
+        
+        # Validate LLM provider
+        if llm_provider.lower() not in ['openai', 'ollama']:
+            return jsonify({"error": "Invalid llm_provider. Must be 'openai' or 'ollama'"}), 400
+        
+        # Launch Celery task
+        task = summarize_thread_task.apply_async(args=[channel_id, thread_ts, llm_provider.lower(), model])
+        
+        return jsonify({"task_id": task.id}), 202
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
