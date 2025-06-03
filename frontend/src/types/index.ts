@@ -45,3 +45,34 @@ export type ReportData = Message[] | TopReplier[];
 export interface ApiError {
   error: string;
 }
+
+// New interfaces for thread summarization
+export interface ThreadSummary {
+  thread_data: {
+    main_message: Message;
+    replies: Reply[];
+    total_messages: number;
+  };
+  summary: string;
+  llm_provider: 'openai' | 'ollama';
+  generated_at: string;
+}
+
+export interface SummaryTaskStatus {
+  status: 'PENDING' | 'SUCCESS' | 'FAILURE';
+  error?: string;
+  data?: ThreadSummary;
+}
+
+export interface SummaryTask {
+  id: string;
+  status: SummaryTaskStatus;
+  created_at: Date;
+  last_updated: Date;
+  channel_id: string;
+  thread_ts: string;
+  llm_provider: 'openai' | 'ollama';
+  model: string;
+}
+
+export type LLMProvider = 'openai' | 'ollama';

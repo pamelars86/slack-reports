@@ -11,6 +11,44 @@ Application for generating reports of messages and most active users in Slack ch
 └── README.md
 ```
 
+## Cómo Ejecutar la Aplicación
+
+### Levantar el Frontend
+
+1. **Navegar al directorio del frontend:**
+   ```bash
+   cd frontend
+   ```
+
+2. **Instalar dependencias:**
+   ```bash
+   npm install
+   # o
+   yarn install
+   ```
+
+3. **Iniciar el servidor de desarrollo:**
+   ```bash
+   npm start
+   # o
+   yarn start
+   ```
+
+4. **Acceder a la aplicación:**
+   - La aplicación estará disponible en `http://localhost:3000`
+   - Asegúrate de que el backend esté ejecutándose en `http://localhost:5000`
+
+### Levantar el Backend
+
+1. **Configurar variables de entorno** (ver sección Backend para detalles)
+
+2. **Ejecutar con Docker:**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **El backend estará disponible en `http://localhost:5000`**
+
 ## Frontend
 
 ### Prerequisites

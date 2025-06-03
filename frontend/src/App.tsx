@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import ReportForm from './components/ReportForm';
 import TaskStatus from './components/TaskStatus';
-import { TaskResponse, TaskStatus as TaskStatusType } from './types';
+import SummaryForm from './components/SummaryForm';
+import SummaryTaskStatus from './components/SummaryTaskStatus';
+import { TaskResponse, TaskStatus as TaskStatusType, SummaryTask, SummaryTaskStatus as SummaryTaskStatusType, LLMProvider } from './types';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const API_URL = 'http://localhost:5000';
@@ -20,8 +22,9 @@ interface Task {
 }
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'reports' | 'tasks'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'tasks' | 'summaries' | 'summary-tasks'>('reports');
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [summaryTasks, setSummaryTasks] = useState<SummaryTask[]>([]);
   const [notification, setNotification] = useState<{ message: string; taskId: string } | null>(null);
 
   const generateReport = async (type: 'messages' | 'repliers', data: {
@@ -65,6 +68,47 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error generating report:', error);
       setNotification({ message: 'Error generating task', taskId: '' });
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const generateSummary = async (data: {
+    channel_id: string;
+    thread_ts: string;
+    llm_provider: LLMProvider;
+    model: string;
+  }) => {
+    try {
+      const response = await fetch(`${API_URL}/summarize-thread`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result: TaskResponse = await response.json();
+      const now = new Date();
+      const newSummaryTask: SummaryTask = {
+        id: result.task_id,
+        status: {
+          status: 'PENDING' as const
+        },
+        created_at: now,
+        last_updated: now,
+        channel_id: data.channel_id,
+        thread_ts: data.thread_ts,
+        llm_provider: data.llm_provider,
+        model: data.model
+      };
+
+      setSummaryTasks(prev => [newSummaryTask, ...prev]);
+      setNotification({ message: `Summary task ${result.task_id} created successfully`, taskId: result.task_id });
+
+      setTimeout(() => setNotification(null), 5000);
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      setNotification({ message: 'Error generating summary task', taskId: '' });
       setTimeout(() => setNotification(null), 5000);
     }
   };
@@ -118,6 +162,58 @@ const App: React.FC = () => {
       console.error('Error checking task status:', error);
       setNotification({
         message: `Error checking status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        taskId
+      });
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const checkSummaryTaskStatus = async (taskId: string) => {
+    try {
+      console.log('Checking summary task status for:', taskId);
+      const response = await fetch(`${API_URL}/task-status/${taskId}?task_name=summarize_thread`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const newStatus: SummaryTaskStatusType = await response.json();
+      console.log('Received summary status:', newStatus);
+
+      if (!newStatus || !newStatus.status) {
+        throw new Error('Invalid status response from server');
+      }
+
+      setSummaryTasks(prev => prev.map(task => {
+        if (task.id === taskId) {
+          console.log('Updating summary task status from:', task.status.status, 'to:', newStatus.status);
+          return {
+            ...task,
+            status: newStatus,
+            last_updated: new Date()
+          };
+        }
+        return task;
+      }));
+
+      let notificationMessage = '';
+      if (newStatus.status === 'SUCCESS') {
+        notificationMessage = `Summary task ${taskId} completed successfully`;
+      } else if (newStatus.status === 'FAILURE') {
+        notificationMessage = `Error in summary task ${taskId}: ${newStatus.error || 'Unknown error'}`;
+      } else {
+        notificationMessage = `Summary task ${taskId} is still pending`;
+      }
+
+      setNotification({
+        message: notificationMessage,
+        taskId
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } catch (error) {
+      console.error('Error checking summary task status:', error);
+      setNotification({
+        message: `Error checking summary status: ${error instanceof Error ? error.message : 'Unknown error'}`,
         taskId
       });
       setTimeout(() => setNotification(null), 5000);
@@ -191,19 +287,29 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1 overflow-auto">
-        {notification && (
-          <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center space-x-2">
-            <CheckCircleIcon className="h-5 w-5" />
-            <span>{notification.message}</span>
-          </div>
-        )}
-        {activeTab === 'reports' ? (
-          <ReportForm onGenerateReport={generateReport} />
-        ) : tasks.length > 0 ? (
+  const downloadSummaryData = (taskId: string) => {
+    const task = summaryTasks.find(t => t.id === taskId);
+    if (!task?.status.data) return;
+
+    const content = JSON.stringify(task.status.data, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `summary_${taskId}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'reports':
+        return <ReportForm onGenerateReport={generateReport} />;
+      
+      case 'tasks':
+        return tasks.length > 0 ? (
           <div className="p-6 space-y-6">
             <h2 className="text-xl font-semibold">Generated Reports</h2>
             {tasks.map(task => (
@@ -227,7 +333,53 @@ const App: React.FC = () => {
             <h2 className="text-xl font-semibold">No reports generated</h2>
             <p className="text-gray-600">Generate a report to see its status.</p>
           </div>
+        );
+      
+      case 'summaries':
+        return <SummaryForm onGenerateSummary={generateSummary} />;
+      
+      case 'summary-tasks':
+        return summaryTasks.length > 0 ? (
+          <div className="p-6 space-y-6">
+            <h2 className="text-xl font-semibold">Thread Summaries</h2>
+            {summaryTasks.map(task => (
+              <SummaryTaskStatus
+                key={task.id}
+                taskId={task.id}
+                status={task.status}
+                onRefresh={() => checkSummaryTaskStatus(task.id)}
+                onDownload={() => downloadSummaryData(task.id)}
+                channel_id={task.channel_id}
+                thread_ts={task.thread_ts}
+                llm_provider={task.llm_provider}
+                model={task.model}
+                last_updated={task.last_updated}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold">No summaries generated</h2>
+            <p className="text-gray-600">Generate a thread summary to see its status.</p>
+          </div>
+        );
+      
+      default:
+        return <ReportForm onGenerateReport={generateReport} />;
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className="flex-1 overflow-auto">
+        {notification && (
+          <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center space-x-2">
+            <CheckCircleIcon className="h-5 w-5" />
+            <span>{notification.message}</span>
+          </div>
         )}
+        {renderContent()}
       </main>
     </div>
   );
